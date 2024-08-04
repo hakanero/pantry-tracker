@@ -24,7 +24,7 @@ const theme = createTheme({
 });
 
 
-export default function Home() {
+function Home() {
 	// all the current inventory
 	const [inventory, setInventory] = useState([])
 	// the inventory with search filters applied 
@@ -60,8 +60,9 @@ export default function Home() {
 	}
 
 	useEffect(() => {
-		if (typeof window !== 'undefined')
-			updateInventory()
+		if (typeof window !== 'undefined'){
+			updateInventory();
+		}
 	}, []);
 
 	// change the item quantity on the database
@@ -244,3 +245,7 @@ export default function Home() {
 		</ThemeProvider>
 	)
 }
+
+const a = dynamic(() => import('../components/Home'), { ssr: false });
+
+export default a;
