@@ -24,7 +24,7 @@ const theme = createTheme({
 });
 
 
-function Home() {
+export default function Home() {
 	// all the current inventory
 	const [inventory, setInventory] = useState([])
 	// the inventory with search filters applied 
@@ -245,7 +245,3 @@ function Home() {
 		</ThemeProvider>
 	)
 }
-
-const a = dynamic(() => import('../components/Home'), { ssr: false });
-
-export default a;
