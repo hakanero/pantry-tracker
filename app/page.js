@@ -12,9 +12,10 @@ import {
 	deleteDoc,
 	getDoc,
 } from 'firebase/firestore'
-import Image from 'next/image'
+import dynamic from 'next/dynamic';
 
-
+// Dynamically import components that might rely on `window`
+const Image = dynamic(() => import('next/image'), { ssr: false });
 const theme = createTheme({
 	palette: {
 		primary: { main: "#197278", bgcolor: "#283D3B" },
