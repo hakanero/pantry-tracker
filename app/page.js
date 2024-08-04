@@ -60,7 +60,8 @@ export default function Home() {
 	}
 
 	useEffect(() => {
-		updateInventory()
+		if (typeof window !== 'undefined')
+			updateInventory()
 	}, []);
 
 	// change the item quantity on the database
