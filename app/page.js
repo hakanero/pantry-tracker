@@ -1,113 +1,244 @@
-import Image from "next/image";
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Box, Stack, Typography, Button, Modal, TextField, Paper, Container, Slider, ThemeProvider, createTheme } from '@mui/material'
+import { firestore } from '@/firebase'
+import {
+	collection,
+	doc,
+	getDocs,
+	query,
+	setDoc,
+	deleteDoc,
+	getDoc,
+} from 'firebase/firestore'
+import Image from 'next/image'
+
+
+const theme = createTheme({
+	palette: {
+		primary: { main: "#197278", bgcolor: "#283D3B" },
+		error: { main: "#C44536", dark: "#772E25" }
+	}
+});
+
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+	// all the current inventory
+	const [inventory, setInventory] = useState([])
+	// the inventory with search filters applied 
+	const [shownInventory, setShownInventory] = useState([])
+	//is the add item modal on?
+	const [addItemModal, setAddItemModal] = useState(false)
+	// the name of the current item being added
+	const [itemName, setItemName] = useState('')
+	// values of the add sliders of the items
+	const [sliderValues, setSliderValues] = useState([]);
+	// is the loading icon being shown?
+	const [loading, setLoading] = useState(false);
+	//current value of the search bar
+	const [searchbar, setSearchbar] = useState("");
+	//current filter applied
+	const [currentFilter, setCurrentFilter] = useState("");
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+	//handle the slider
+	const handleSliderChange = (name, value) => {
+		setSliderValues(prevValues => ({ ...prevValues, [name]: value }));
+	};
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+	// update the local inventory with the one from the database
+	const updateInventory = async () => {
+		const snapshot = query(collection(firestore, 'inventory'))
+		const docs = await getDocs(snapshot)
+		const inventoryList = []
+		docs.forEach((doc) => {
+			inventoryList.push({ name: doc.id, ...doc.data() })
+		})
+		setInventory(inventoryList)
+		setLoading(false);
+	}
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+	useEffect(() => {
+		updateInventory()
+	}, []);
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
+	// change the item quantity on the database
+	const changeItemQuantity = async (item, amount = 1, action = "add") => {
+		setLoading(true);
+		const docRef = doc(collection(firestore, 'inventory'), item)
+		const docSnap = await getDoc(docRef)
+		if (action == "remove") {
+			amount *= -1;
+		}
+		if (docSnap.exists()) {
+			const { quantity } = docSnap.data()
+			await setDoc(docRef, { quantity: quantity + amount })
+		} else {
+			await setDoc(docRef, { quantity: amount })
+		}
+		await updateInventory()
+	}
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+	// add a new item (virtually the same as above)
+	const addNewItem = async (item, amount = 1) => {
+		if(inventory.length > 100){
+			//cap the amount of items
+			return;
+		}
+		setLoading(true);
+		item = item.toLowerCase();
+		const docRef = doc(collection(firestore, 'inventory'), item)
+		const docSnap = await getDoc(docRef)
+		if (docSnap.exists()) {
+			/// TODO: handle this (alert item exists)
+			await setDoc(docRef, { quantity: quantity + amount });
+		} else {
+			await setDoc(docRef, { quantity: amount })
+		}
+		await updateInventory()
+	}
+
+	// delete an item from the database
+	const removeItem = async (item) => {
+		setLoading(true);
+		item = item.toLowerCase();
+		const docRef = doc(collection(firestore, 'inventory'), item);
+		await deleteDoc(docRef);
+		await updateInventory();
+	}
+
+	//search an item (apply filters)
+	const searchForItem = (item) => {
+		setCurrentFilter(item);
+		if(item == "")
+			setShownInventory(inventory);
+		else
+			setShownInventory(inventory.filter((name) => name.name.match(item)));
+	}
+
+	const handleOpen = () => setAddItemModal(true)
+	const handleClose = () => setAddItemModal(false)
+
+	return (
+		<ThemeProvider theme={theme}>
+			<Container sx={{ mt: 5 }}>
+				<Typography color={"primary.contrastText"} sx={{
+					position:"fixed",
+					zIndex : 100,
+					bgcolor: "error.main"
+				}}>
+					test build, so please refrain from abusing the database. thank you!!
+				</Typography>
+				<Modal
+					open={addItemModal}
+					onClose={handleClose}
+					aria-labelledby="modal-modal-title"
+					aria-describedby="modal-modal-description"
+				>
+					<Box sx={{ bgcolor: "primary.light", position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 500, boxShadow: 20, flex: 1, flexDirection: "column", p: 5, borderRadius: 2 }}>
+						<Typography id="modal-modal-title" variant="h6" component="h2" textAlign={"center"} mb={5}>
+							Add a new item!
+						</Typography>
+						<Stack width="100%" direction={'row'} spacing={2}>
+							<TextField
+								helperText="The item's name"
+								id="outlined-basic"
+								label="Item"
+								variant="outlined"
+								fullWidth
+								value={itemName}
+								onChange={(e) => setItemName(e.target.value)}
+								sx={{
+									color: "primary.contrastText"
+								}}
+							/>
+							<Button
+								variant="outlined"
+								onClick={() => {
+									addNewItem(itemName)
+									setItemName('')
+									handleClose()
+								}}
+							>
+								Add
+							</Button>
+						</Stack>
+					</Box>
+				</Modal>
+				<Modal open={loading} aria-labelledby="modal-modal-title"
+					aria-describedby="modal-modal-description">
+					<Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 64, borderRadius: 32, bgcolor: "black", boxShadow: 20 }}>
+						<Image alt="loading gif" width={64} height={64} src="/loading.gif" />
+					</Box>
+				</Modal>
+				<Box sx={{ p: 2 }}>
+					<Paper elevation={2} sx={{ bgcolor: "primary.dark" }}>
+						<Typography variant={'h2'} sx={{ textAlign: "center", color: "primary.contrastText" }}>
+							Your Inventory
+						</Typography>
+						<Button variant="contained" onClick={handleOpen} sx={{ width: "100%" }}>
+							Add a New Item
+						</Button>
+						<Stack direction={"row"}>
+							<TextField
+								fullWidth
+								alt="item search"
+								focused={true}
+								sx={{
+									hintText: "Search for an item",
+									color: "primary.contrastText"
+								}}
+								onChange={(e) => setSearchbar(e.target.value)}
+								value={searchbar}
+							/>
+							<Button sx={{
+								bgcolor: "primary.light",
+								color: "primary.contrastText"
+							}}
+								onClick={() => {
+									searchForItem(searchbar);
+								}}>
+								Search
+							</Button>
+						</Stack>
+						{currentFilter != "" && 
+						<Typography sx= {{color: "primary.contrastText"}}>
+							Showing results for {currentFilter}
+						</Typography>}
+					</Paper>
+					<Box sx={{ display: "flex", flexDirection: { sm: "column", md: "row" }, flexWrap: "wrap" }}>
+						{(currentFilter == "" ? inventory : shownInventory).map(({ name, quantity }) => (
+							<Paper
+								key={name}
+								sx={{ width: { sm: "100", md: 320 }, m: 3 }}>
+								<Button sx={{
+									position: "relative",
+									top: "0px",
+									bgcolor: "error.main",
+									color: "error.contrastText"
+								}} onClick={() => removeItem(name)}>
+									Remove item
+								</Button>
+								<Typography variant={'h3'} sx={{ textAlign: "center", fontWeight: "bold", p: 2 }}>
+									{name}
+								</Typography>
+
+								<Typography variant={'h5'} textAlign={'center'}>
+									Amount: {quantity}
+								</Typography>
+								<Slider marks max={20} sx={{ mx: 5, width: "80%" }} onChange={(e, v) => { handleSliderChange(name, v) }} value={sliderValues[name] || 0} />
+								<Box sx={{ display: "flex", flexDirection: "row" }}>
+									<Button variant="contained" onClick={() => changeItemQuantity(name, sliderValues[name])} sx={{ width: "50%" }}>
+										Add {sliderValues[name] || 1}
+									</Button><Button variant="contained" onClick={() => changeItemQuantity(name, sliderValues[name], "remove")} sx={{ width: "50%" }}>
+										Remove {sliderValues[name] || 1}
+									</Button>
+								</Box>
+							</Paper>
+						))}
+					</Box>
+				</Box>
+			</Container>
+		</ThemeProvider>
+	)
 }
